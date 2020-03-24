@@ -38,6 +38,7 @@ htmlcov
 
 # Pycharm/Intellij
 .idea
+env/
 
 # Complexity
 output/*.html

@@ -48,6 +48,29 @@ Add django-dj-plugin's URL patterns:
         ...
     ]
 
+If you want to sort menu or hidden menu, replace 'django.contrib.admin' with 'custadmin' in your `INSTALLED_APPS`:
+
+.. code-block:: python
+
+    INSTALLED_APPS = (
+        ...
+        # 'django.contrib.admin',
+        'custadmin',
+        ...
+    )
+
+Add attribute(menu_hidden/menu_index) to your modelAdmin:
+
+.. code-block:: python
+
+    from django.contrib import admin
+
+
+    @admin.register(XXXModel)
+    class XXXModelAdmin(admin.ModelAdmin):
+        menu_hidden = True  # True：hidden the menu
+        menu_index = 1 # type is int, The lower the value, the higher the rank
+
 Features
 --------
 
