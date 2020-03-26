@@ -71,6 +71,16 @@ Add attribute(menu_hidden/menu_index) to your modelAdmin:
         menu_hidden = True  # True：hidden the menu
         menu_index = 1 # type is int, The lower the value, the higher the rank
 
+If you want add self-defined menu, Add it to your `INSTALLED_APPS`:
+
+.. code-block:: python
+
+    INSTALLED_APPS = (
+        ...
+        'custmenu',
+        ...
+    )
+
 Features
 --------
 
