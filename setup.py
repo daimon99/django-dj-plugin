@@ -54,7 +54,8 @@ setup(
     url='https://github.com/daimon99/django-dj-plugin',
     packages=[
         'django_dj_plugin',
-        'custadmin'
+        'custadmin',
+	'custmenu',
     ],
     include_package_data=True,
     install_requires=[],
