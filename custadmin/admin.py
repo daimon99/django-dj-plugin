@@ -111,8 +111,21 @@ class MyAdminSite(AdminSite):
         ], context)
 
     def get_app_list(self, request):
+        user = request.user
+        groups = user.groups.filter()
 
         app_dict = self._build_app_dict(request)
+        is_installed = apps.is_installed('custmenu')
+
+        if is_installed:
+            from custmenu.models import MinorAddress
+            from custmenu.utils import add_menu_to_app_list
+
+            if user.is_superuser or groups:
+                addresses = MinorAddress.objects.filter(menu_hidden=False, major__menu_hidden=False)
+                for address in addresses:
+                    if user.is_superuser or address.group in groups:
+                        add_menu_to_app_list(app_dict, address)
 
         app_list = sorted(app_dict.values(), key=lambda x: x['name'].lower())
 
