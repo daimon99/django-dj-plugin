@@ -44,6 +44,7 @@ class FdfsStorage(Storage):
         # 'Uploaded size': '228.00KB'
         # }
         client = Fdfs_client(get_tracker_conf(self.client_conf))  # 实例化一个Fdfs_client对象
+        client.timeout = 300
         dir_name, file_name = os.path.split(name)
         file_ext_name = file_name.split('.')[-1]
         ret = client.upload_by_buffer(content.read(), file_ext_name, {
@@ -54,7 +55,7 @@ class FdfsStorage(Storage):
         if ret.get("Status") != "Upload successed.":
             raise Exception("upload file failed")
         file_name = ret.get("Remote file_id")
-        return file_name.decode()
+        return file_name
 
     def url(self, name):
         """
