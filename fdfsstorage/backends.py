@@ -1,112 +1,74 @@
 # coding: utf-8
+
 import os
-from io import BytesIO
 
-from django.conf import settings
-from django.core.files.base import File
 from django.core.files.storage import Storage
-from django.utils.deconstruct import deconstructible
-from django.utils.encoding import force_bytes, force_text
+from fdfs_client.client import Fdfs_client, get_tracker_conf
 
 
-@deconstructible
 class FdfsStorage(Storage):
-    """
-    Fdfs Storage Service
-    """
-    location = ""
-
-    def __init__(self, option=None):
-        if not option:
-            option = getattr(settings, 'FDFS_OPTIONS', {})
-        self.FDFS_PATH = '/usr/local/bin/fdfs_upload_file'
-        self.CONF_PATH = '/etc/fdfs/client.conf'
+    def __init__(self, base_url='http://', client_conf=None):
+        """
+        初始化
+        :param base_url: 用于构造图片完整路径使用，图片服务器的域名
+        :param client_conf: FastDFS客户端配置文件的路径
+        """
+        if base_url is None:
+            # base_url = settings.FDFS_URL
+            base_url = 'http://localhost'
+        self.base_url = base_url
+        if client_conf is None:
+            # client_conf = settings.FDFS_CLIENT_CONF
+            client_conf = '/etc/fdfs/client.conf'
+        self.client_conf = client_conf
 
     def _open(self, name, mode='rb'):
-        return FdfsFile(name, self, mode)
+        """
+        用不到打开文件，所以省略
+        """
+        pass
 
     def _save(self, name, content):
-        print(name, content)
+        """
+        在FastDFS中保存文件
+        :param name: 传入的文件名
+        :param content: 文件内容
+        :return: 保存到数据库中的FastDFS的文件名
+        """
+        # {
+        # 'Local file name': '/home/python/1.jpg',
+        # 'Storage IP': '192.168.189.133',
+        # 'Remote file_id': 'group1/M00/00/00/wKi9hVz-Pm-Ab2WUAAOTipWhnKM344.jpg',
+        #  'Group name': 'group1',
+        # 'Status': 'Upload successed.',
+        # 'Uploaded size': '228.00KB'
+        # }
+        client = Fdfs_client(get_tracker_conf(self.client_conf))  # 实例化一个Fdfs_client对象
+        dir_name, file_name = os.path.split(name)
+        file_ext_name = file_name.split('.')[-1]
+        ret = client.upload_by_buffer(content.read(), file_ext_name, {
+            'dir': dir_name,
+            'name': file_name,
+            'namespace': 'default'
+        })  # 根据内容上传
+        if ret.get("Status") != "Upload successed.":
+            raise Exception("upload file failed")
+        file_name = ret.get("Remote file_id")
+        return file_name.decode()
 
-        raise NotImplementedError()
-
-    def _read(self, current_pos, num_bytes):
-        raise NotImplementedError()
-
-    def path(self):
-        raise NotImplementedError()
-
-    def delete(self):
-        raise NotImplementedError()
+    def url(self, name):
+        """
+        返回文件的完整URL路径
+        :param name: 数据库中保存的文件名
+        :return: 完整的URL
+        """
+        return self.base_url + name
 
     def exists(self, name):
+        """
+        判断文件是否存在，FastDFS可以自行解决文件的重名问题
+        所以此处返回False，告诉Django上传的都是新文件
+        :param name:  文件名
+        :return: False
+        """
         return False
-
-    def listdir(self):
-        raise NotImplementedError()
-
-    def size(self, name):
-        raise NotImplementedError()
-
-    def url(self):
-        raise NotImplementedError()
-
-
-class FdfsFile(File):
-    def init(self, name, storage, mode):
-        self.file = BytesIO()
-        self._mode = mode
-        self._name = name
-        self._storage = storage
-        self._is_dirty = False
-        self._is_read = False
-
-    @property
-    def size(self):
-        if self._is_dirty or self._is_read:
-            # Get the size of a file like object
-            # Check http://stackoverflow.com/a/19079887
-            old_file_position = self.file.tell()
-            self.file.seek(0, os.SEEK_END)
-            self._size = self.file.tell()
-            self.file.seek(old_file_position, os.SEEK_SET)
-        if not hasattr(self, '_size'):
-            self._size = self._storage.size(self._name)
-        return self._size
-
-    def read(self, num_bytes=None):
-        # todo 大文件读取会有问题。以后优化。应该支持chunk 读的方式。现在是一口气把所有内容都读出来了。
-        if not self._is_read:
-            current_pos = 0
-            content = self._storage._read(self._name, current_pos, num_bytes)
-            self.file = BytesIO(content)
-            self._is_read = True
-
-        if num_bytes is None:
-            data = self.file.read()
-        else:
-            data = self.file.read(num_bytes)
-
-        if 'b' in self._mode:
-            return data
-        else:
-            return force_text(data)
-
-    def write(self, content):
-        if 'w' not in self._mode:
-            raise AttributeError("File was opened for read-only access.")
-        self.file.write(force_bytes(content))
-        self._is_dirty = True
-        self._is_read = True
-
-    def close(self):
-        if self._is_dirty:
-            self.file.seek(0)
-            self._storage._save(self._name, self.file)
-        self.file.close()
-
-
-class FdfsDriver(object):
-    @staticmethod
-    def upload_file():
-        pass
