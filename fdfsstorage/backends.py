@@ -107,6 +107,6 @@ class FdfsFile(File):
 
 
 class FdfsDriver(object):
-    @classmethod
-    def upload_file:
+    @staticmethod
+    def upload_file():
         pass
