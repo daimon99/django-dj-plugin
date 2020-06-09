@@ -26,13 +26,12 @@ class FdfsStorage(Storage):
         return FdfsFile(name, self, mode)
 
     def _save(self, name, content):
+        print(name, content)
+
         raise NotImplementedError()
 
     def _read(self, current_pos, num_bytes):
         raise NotImplementedError()
-
-    def get_valid_name(self, name):
-        return name
 
     def path(self):
         raise NotImplementedError()
@@ -105,3 +104,9 @@ class FdfsFile(File):
             self.file.seek(0)
             self._storage._save(self._name, self.file)
         self.file.close()
+
+
+class FdfsDriver(object):
+    @classmethod
+    def upload_file:
+        pass
