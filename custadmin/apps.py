@@ -1,5 +1,5 @@
-from django.contrib.admin.apps import AdminConfig
+from django.contrib.admin.apps import apps
 
 
-class MyAdminConfig(AdminConfig):
+class MyAdminConfig(apps.AdminConfig):
     default_site = 'custadmin.admin.MyAdminSite'
